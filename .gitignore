@@ -15,6 +15,10 @@ db.sqlite3-journal
 /staticfiles/
 *.log
 
+# Test coverage
+.coverage
+htmlcov/
+
 # Environment variables
 .env
 

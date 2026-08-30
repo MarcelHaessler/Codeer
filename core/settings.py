@@ -40,7 +40,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'django_filters',
     'auth_app',
+    'profile_app',
+    'offers_app',
+    'orders_app',
+    'reviews_app',
+    'base_info_app',
 ]
 
 MIDDLEWARE = [
@@ -138,6 +144,8 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    # Prices are returned as numbers, not strings, to match the API docs.
+    'COERCE_DECIMAL_TO_STRING': False,
 }
 
 # Frontend runs via VS Code Live Server on this origin
