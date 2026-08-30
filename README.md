@@ -37,6 +37,18 @@ Install the dependencies:
 pip install -r requirements.txt
 ```
 
+Create your `.env` file from the template:
+
+```bash
+cp .env.example .env
+```
+
+The project refuses to start without a `SECRET_KEY`. Generate one and paste it into `.env`:
+
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
 Create the database:
 
 ```bash
@@ -164,8 +176,9 @@ Each app keeps its API layer in an `api/` subfolder containing `serializers.py`,
 
 ## Development notes
 
-The database file and the `media/` folder are excluded from version control. After cloning you
-always start with an empty database.
+The database file, the `media/` folder and `.env` are excluded from version control. After
+cloning you always start with an empty database and have to create your own `.env`; use
+`.env.example` as the template.
 
 Code style is checked with flake8 using the configuration in `.flake8` (max line length 99).
 flake8 is a development dependency and is deliberately not listed in `requirements.txt`:
