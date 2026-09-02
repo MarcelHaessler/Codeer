@@ -1,5 +1,5 @@
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient, APITestCase
 
 from core.test_utils import auth_client, create_offer, create_user, tier_payload
 
@@ -36,6 +36,10 @@ class OfferCreateTests(APITestCase):
         response = client.post(OFFERS_URL, self.payload(), format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_rejects_anonymous_user(self):
+        response = APIClient().post(OFFERS_URL, self.payload(), format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_rejects_incomplete_tiers(self):
         response = self.client.post(
             OFFERS_URL, self.payload(tiers=('basic',)), format='json'
@@ -64,6 +68,18 @@ class OfferListTests(APITestCase):
         response = self.client.get(OFFERS_URL)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 2)
+
+    def test_is_public(self):
+        """The API docs list no permissions for the offer list endpoint."""
+        response = APIClient().get(OFFERS_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 2)
+
+    def test_filters_work_without_a_token(self):
+        url = f'{OFFERS_URL}?creator_id={self.other.id}&ordering=min_price'
+        response = APIClient().get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
 
     def test_includes_aggregates_and_creator(self):
         response = self.client.get(OFFERS_URL)

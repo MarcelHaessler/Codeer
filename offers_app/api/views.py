@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from ..models import Offer, OfferDetail
 from .filters import OfferFilter
 from .pagination import OfferPagination
-from .permissions import IsBusinessUser, IsOfferOwner
+from .permissions import IsBusinessUserOrReadOnly, IsOfferOwner
 from .serializers import (
     OfferDetailSerializer,
     OfferListSerializer,
@@ -25,9 +25,9 @@ def annotated_offers():
 
 
 class OfferListCreateView(generics.ListCreateAPIView):
-    """Lists offers with filtering and search, or creates a new one."""
+    """Lists offers publicly, or creates one as an authenticated business user."""
 
-    permission_classes = [IsAuthenticated, IsBusinessUser]
+    permission_classes = [IsBusinessUserOrReadOnly]
     pagination_class = OfferPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = OfferFilter
