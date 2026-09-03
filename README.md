@@ -18,8 +18,8 @@ by the Developer Akademie.
 Clone the repository and change into the project folder:
 
 ```bash
-git clone https://github.com/MarcelHaessler/Codeer.git
-cd Codeer
+git clone https://github.com/MarcelHaessler/Coderr.git
+cd Coderr
 ```
 
 Create and activate a virtual environment:
