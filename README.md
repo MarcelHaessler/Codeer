@@ -180,12 +180,14 @@ The database file, the `media/` folder and `.env` are excluded from version cont
 cloning you always start with an empty database and have to create your own `.env`; use
 `.env.example` as the template.
 
-Code style is checked with flake8 using the configuration in `.flake8` (max line length 99).
-flake8 is a development dependency and is deliberately not listed in `requirements.txt`:
+Code style is checked with flake8 and import ordering with isort, using the configuration in
+`.flake8` and `.isort.cfg` (max line length 99). Both are development dependencies and are
+deliberately not listed in `requirements.txt`:
 
 ```bash
-pip install flake8
+pip install flake8 isort
 flake8 .
+isort --check-only .
 ```
 
 Every app ships tests covering the happy path as well as the permission and validation rules:

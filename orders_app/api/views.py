@@ -7,11 +7,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from offers_app.models import OfferDetail
-
 from ..models import Order
 from .permissions import IsCustomerUser, IsOrderBusinessUserOrAdmin
 from .serializers import OrderSerializer
-
 
 MISSING_DETAIL_ERROR = {'offer_detail_id': ['This field is required.']}
 
