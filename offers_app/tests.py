@@ -53,6 +53,12 @@ class OfferCreateTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_rejects_negative_delivery_time(self):
+        data = self.payload()
+        data['details'][0]['delivery_time_in_days'] = -1
+        response = self.client.post(OFFERS_URL, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
 
 class OfferListTests(APITestCase):
     """Covers GET /api/offers/ including filtering and ordering."""
@@ -163,6 +169,61 @@ class OfferDetailTests(APITestCase):
                 'features', 'offer_type',
             },
         )
+
+
+class OfferPatchValidationTests(APITestCase):
+    """Covers the validation rules for the details sent with PATCH."""
+
+    def setUp(self):
+        self.business = create_user('kevin', 'business')
+        self.offer = create_offer(self.business)
+        self.client = auth_client(self.business)
+        self.url = f'{OFFERS_URL}{self.offer.id}/'
+
+    def patch_details(self, *details):
+        """Sends the given detail entries and returns the response."""
+        return self.client.patch(self.url, {'details': list(details)}, format='json')
+
+    def test_requires_offer_type_in_each_detail(self):
+        response = self.patch_details({'title': 'No type given'})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('details', response.data)
+
+    def test_rejects_empty_detail(self):
+        response = self.patch_details({})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_rejects_duplicate_offer_type(self):
+        response = self.patch_details(
+            {'offer_type': 'basic', 'price': 1}, {'offer_type': 'basic', 'price': 2}
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_rejects_negative_delivery_time(self):
+        response = self.patch_details({'offer_type': 'basic', 'delivery_time_in_days': -3})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_rejects_negative_price(self):
+        response = self.patch_details({'offer_type': 'basic', 'price': -10})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_rejects_revisions_below_minus_one(self):
+        response = self.patch_details({'offer_type': 'basic', 'revisions': -5})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_allows_unlimited_revisions(self):
+        response = self.patch_details({'offer_type': 'basic', 'revisions': -1})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_rejects_features_that_are_not_a_list(self):
+        response = self.patch_details({'offer_type': 'basic', 'features': 'nope'})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_leaves_other_tiers_untouched(self):
+        self.patch_details({'offer_type': 'premium', 'price': 999})
+        prices = {d.offer_type: d.price for d in self.offer.details.all()}
+        self.assertEqual(prices['basic'], 100)
+        self.assertEqual(prices['premium'], 999)
 
 
 class OfferModelTests(APITestCase):

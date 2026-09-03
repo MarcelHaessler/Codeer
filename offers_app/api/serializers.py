@@ -9,11 +9,27 @@ DETAIL_FIELDS = [
 
 
 class OfferDetailSerializer(serializers.ModelSerializer):
-    """Full representation of a single pricing tier."""
+    """Full representation of a single pricing tier.
+
+    The numeric limits are declared here because writes to existing tiers
+    bypass model validation and would otherwise fail inside the database.
+    """
+
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=0)
+    delivery_time_in_days = serializers.IntegerField(min_value=0)
+    features = serializers.ListField(child=serializers.CharField(), required=False)
 
     class Meta:
         model = OfferDetail
         fields = DETAIL_FIELDS
+
+    def validate_revisions(self, value):
+        """Allows -1 for unlimited revisions, but no other negative number."""
+        if value < -1:
+            raise serializers.ValidationError(
+                'Use -1 for unlimited revisions or a number of 0 or more.'
+            )
+        return value
 
 
 class OfferDetailLinkSerializer(serializers.ModelSerializer):
@@ -96,15 +112,19 @@ class OfferWriteSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'image', 'description', 'details']
 
     def validate_details(self, value):
-        """Only a new offer needs all three tiers; PATCH may send a subset."""
+        """Every tier must name its offer_type; a new offer needs all three."""
+        types = [item.get('offer_type') for item in value]
+        if None in types:
+            raise serializers.ValidationError('Each detail must include its offer_type.')
+        if len(types) != len(set(types)):
+            raise serializers.ValidationError('Each offer_type may appear only once.')
         if self.instance is None:
-            self._validate_complete_tiers(value)
+            self._validate_complete_tiers(types)
         return value
 
-    def _validate_complete_tiers(self, details):
+    def _validate_complete_tiers(self, types):
         """Requires exactly one basic, standard and premium tier on create."""
-        types = sorted(item.get('offer_type') for item in details)
-        if types != ['basic', 'premium', 'standard']:
+        if sorted(types) != ['basic', 'premium', 'standard']:
             raise serializers.ValidationError(
                 'Exactly one basic, standard and premium detail is required.'
             )
@@ -126,8 +146,6 @@ class OfferWriteSerializer(serializers.ModelSerializer):
         return instance
 
     def _update_details(self, offer, details_data):
-        """Updates existing tiers, matched by their offer_type."""
+        """Updates existing tiers in place, matched by their offer_type."""
         for detail_data in details_data:
-            offer.details.filter(
-                offer_type=detail_data.get('offer_type')
-            ).update(**detail_data)
+            offer.details.filter(offer_type=detail_data['offer_type']).update(**detail_data)
