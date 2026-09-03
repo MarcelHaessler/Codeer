@@ -29,9 +29,8 @@ load_dotenv(BASE_DIR / '.env')
 SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     raise ImproperlyConfigured(
-        'SECRET_KEY is missing. Copy .env.example to .env and set a key, '
-        'for example with: python -c "from django.core.management.utils '
-        'import get_random_secret_key; print(get_random_secret_key())"'
+        'SECRET_KEY is missing. Copy .env.example to .env and set a key; '
+        'the README shows how to generate one.'
     )
 
 # SECURITY WARNING: don't run with debug turned on in production!
