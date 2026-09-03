@@ -17,7 +17,10 @@ from .serializers import (
 
 
 def annotated_offers():
-    """Returns offers annotated with the cheapest price and fastest delivery."""
+    """Returns offers annotated with their cheapest price and fastest delivery.
+
+    The annotation lets filtering and ordering by price happen in SQL.
+    """
     return Offer.objects.annotate(
         min_price=Min('details__price'),
         min_delivery_time=Min('details__delivery_time_in_days'),
@@ -27,6 +30,8 @@ def annotated_offers():
 class OfferListCreateView(generics.ListCreateAPIView):
     """Lists offers publicly, or creates one as an authenticated business user."""
 
+    queryset = annotated_offers()
+    serializer_class = OfferListSerializer
     permission_classes = [IsBusinessUserOrReadOnly]
     pagination_class = OfferPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -35,15 +40,11 @@ class OfferListCreateView(generics.ListCreateAPIView):
     ordering_fields = ['updated_at', 'min_price']
     ordering = ['-updated_at']
 
-    def get_queryset(self):
-        """Annotated, because filtering and ordering by price happen in SQL."""
-        return annotated_offers()
-
     def get_serializer_class(self):
         """POST accepts nested tiers, GET returns them as id and url pairs."""
         if self.request.method == 'POST':
             return OfferWriteSerializer
-        return OfferListSerializer
+        return self.serializer_class
 
     def perform_create(self, serializer):
         """Takes the owner from the token instead of trusting the request body."""
@@ -53,18 +54,16 @@ class OfferListCreateView(generics.ListCreateAPIView):
 class OfferDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Retrieves, updates or deletes a single offer."""
 
+    queryset = annotated_offers()
+    serializer_class = OfferRetrieveSerializer
     permission_classes = [IsAuthenticated, IsOfferOwner]
     http_method_names = ['get', 'patch', 'delete', 'head', 'options']
-
-    def get_queryset(self):
-        """Annotated as well, so min_price appears in the detail response."""
-        return annotated_offers()
 
     def get_serializer_class(self):
         """PATCH answers with expanded tiers, GET with id and url references."""
         if self.request.method == 'PATCH':
             return OfferWriteSerializer
-        return OfferRetrieveSerializer
+        return self.serializer_class
 
 
 class OfferDetailItemView(generics.RetrieveAPIView):
