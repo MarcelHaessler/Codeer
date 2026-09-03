@@ -54,6 +54,21 @@ class OrderCreateTests(APITestCase):
     def test_rejects_missing_offer_detail_id(self):
         response = self.client.post(ORDERS_URL, {}, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('offer_detail_id', response.data)
+
+    def test_rejects_non_numeric_offer_detail_id(self):
+        response = self.client.post(
+            ORDERS_URL, {'offer_detail_id': 'sdfg'}, format='json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('offer_detail_id', response.data)
+
+    def test_rejects_zero_or_negative_offer_detail_id(self):
+        for value in (0, -1):
+            response = self.client.post(
+                ORDERS_URL, {'offer_detail_id': value}, format='json'
+            )
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_returns_404_for_unknown_offer_detail(self):
         response = self.client.post(

@@ -9,9 +9,7 @@ from rest_framework.views import APIView
 from offers_app.models import OfferDetail
 from ..models import Order
 from .permissions import IsCustomerUser, IsOrderBusinessUserOrAdmin
-from .serializers import OrderSerializer
-
-MISSING_DETAIL_ERROR = {'offer_detail_id': ['This field is required.']}
+from .serializers import OrderCreateSerializer, OrderSerializer
 
 
 def build_order_data(detail, customer):
@@ -51,11 +49,12 @@ class OrderListCreateView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         """Books a tier; the request sends offer_detail_id, not model fields."""
-        detail_id = request.data.get('offer_detail_id')
-        if not detail_id:
-            return Response(MISSING_DETAIL_ERROR, status=status.HTTP_400_BAD_REQUEST)
+        serializer = OrderCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         detail = get_object_or_404(
-            OfferDetail.objects.select_related('offer'), pk=detail_id
+            OfferDetail.objects.select_related('offer'),
+            pk=serializer.validated_data['offer_detail_id'],
         )
         order = Order.objects.create(**build_order_data(detail, request.user))
         return Response(
